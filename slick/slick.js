@@ -6,7 +6,7 @@
 |___/_|_|\___|_|\_(_)/ |___/
                    |__/
 
- Version: 1.5.6
+ Version: 1.5.6.1
   Author: Ken Wheeler
  Website: http://kenwheeler.github.io
     Docs: http://kenwheeler.github.io/slick
@@ -64,6 +64,7 @@
                 infinite: true,
                 initialSlide: 0,
                 lazyLoad: 'ondemand',
+                preLoad: false,
                 mobileFirst: false,
                 pauseOnHover: true,
                 pauseOnDotsHover: false,
@@ -827,32 +828,28 @@
             _.$dots.remove();
         }
 
-        if ( _.options.arrows === true ) {
+        if ( _.$prevArrow.length ) {
 
-            if ( _.$prevArrow && _.$prevArrow.length ) {
+            _.$prevArrow
+                .removeClass('slick-disabled slick-arrow slick-hidden')
+                .removeAttr('aria-hidden aria-disabled tabindex')
+                .css("display","");
 
-                _.$prevArrow
-                    .removeClass('slick-disabled slick-arrow slick-hidden')
-                    .removeAttr('aria-hidden aria-disabled tabindex')
-                    .css("display","");
-
-                if ( _.htmlExpr.test( _.options.prevArrow )) {
-                    _.$prevArrow.remove();
-                }
+            if ( _.htmlExpr.test( _.options.prevArrow )) {
+                _.$prevArrow.remove();
             }
+        }
 
-            if ( _.$nextArrow && _.$nextArrow.length ) {
+        if ( _.$nextArrow.length ) {
 
-                _.$nextArrow
-                    .removeClass('slick-disabled slick-arrow slick-hidden')
-                    .removeAttr('aria-hidden aria-disabled tabindex')
-                    .css("display","");
+            _.$nextArrow
+                .removeClass('slick-disabled slick-arrow slick-hidden')
+                .removeAttr('aria-hidden aria-disabled tabindex')
+                .css("display","");
 
-                if ( _.htmlExpr.test( _.options.nextArrow )) {
-                    _.$nextArrow.remove();
-                }
+            if ( _.htmlExpr.test( _.options.nextArrow )) {
+                _.$nextArrow.remove();
             }
-
         }
 
         if (_.$slides) {
@@ -1371,10 +1368,41 @@
                 if (rangeStart > 0) rangeStart--;
                 if (rangeEnd <= _.slideCount) rangeEnd++;
             }
-        }
+        }        
 
         loadRange = _.$slider.find('.slick-slide').slice(rangeStart, rangeEnd);
         loadImages(loadRange);
+        
+        if (_.options.preLoad === true) {
+            var preLoadNextRangeStart, preLoadNextRangeEnd, preLoadNextRange,
+                    preLoadPrevRangeStart, preLoadPrevPrevRangeEnd, preLoadPrevRange;
+            
+            var realSlides = _.$slider.find('.slick-slide:not(.slick-cloned)').get();
+            
+            // Pre-loading next set of images
+            preLoadNextRangeStart = --rangeEnd < _.slideCount ? rangeEnd : 0;
+            preLoadNextRangeEnd = preLoadNextRangeStart + _.options.slidesToShow;
+            
+            if (preLoadNextRangeEnd >= _.slideCount) {
+                preLoadNextRange = realSlides.slice(preLoadNextRangeStart)
+                        .concat(realSlides.slice(0, preLoadNextRangeEnd - _.slideCount));
+            } else {
+                preLoadNextRange = realSlides.slice(preLoadNextRangeStart, preLoadNextRangeEnd);
+            }
+            loadImages(preLoadNextRange);
+
+            // Pre-loading prev set of images
+            preLoadPrevPrevRangeEnd = --rangeStart > 0 ? rangeStart : _.slideCount;
+            preLoadPrevRangeStart = preLoadPrevPrevRangeEnd - _.options.slidesToShow;
+
+            if (preLoadPrevRangeStart < 0) {
+                preLoadPrevRange = realSlides.slice(0, preLoadPrevPrevRangeEnd).reverse()
+                        .concat(realSlides.slice(_.slideCount + preLoadPrevRangeStart).reverse);
+            } else {
+                preLoadPrevRange = realSlides.slice(preLoadPrevRangeStart, preLoadPrevPrevRangeEnd);
+            }
+            loadImages(preLoadPrevRange);
+        }
 
         if (_.slideCount <= _.options.slidesToShow) {
             cloneRange = _.$slider.find('.slick-slide');
